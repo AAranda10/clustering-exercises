@@ -17,41 +17,34 @@ from scipy import stats
     This function is going to take in the acquired data and clean it. Removing null values, outliers, and columns we will not need to assess the data or build our models. 
     '''
 
-def prep_zillow_data():
-    df = acquire.get_zillow_data()
-    df = df.drop(columns = {'airconditioningtypeid', 'architecturalstyletypeid', 'basementsqft',
-                            'taxdelinquencyyear', 'buildingclasstypeid', 'decktypeid', 'finishedfloor1squarefeet',
-                            'finishedsquarefeet13', 'finishedsquarefeet15', 'finishedsquarefeet50',
-                            'finishedsquarefeet6', 'fireplacecnt', 'hashottuborspa', 'poolsizesum',
-                            'pooltypeid10', 'pooltypeid2', 'pooltypeid7', 'storytypeid', 'threequarterbathnbr',
-                            'typeconstructiontypeid', 'yardbuildingsqft17', 'yardbuildingsqft26', 'numberofstories',
-                            'fireplaceflag', 'taxdelinquencyflag', 'buildingqualitytypeid', 'garagecarcnt',
-                            'garagetotalsqft', 'poolcnt', 'regionidneighborhood', 'propertyzoningdesc',
-                            'propertycountylandusecode', 'id', 'parcelid', 'transactiondate', 'finishedsquarefeet12',
-                            'censustractandblock', 'logerror'})
-    df['propertylandusetypeid'] = df['propertylandusetypeid'].astype(float)
-    df['calculatedfinishedsquarefeet'] = df['calculatedfinishedsquarefeet'].fillna((df['calculatedfinishedsquarefeet'].mean()))
-    df['calculatedbathnbr'] = df['calculatedbathnbr'].fillna((df['calculatedbathnbr'].mean()))
-    df['fullbathcnt'] = df['fullbathcnt'].fillna((df['fullbathcnt'].mean()))
-    df['heatingorsystemtypeid'] = df['heatingorsystemtypeid'].fillna((df['heatingorsystemtypeid'].mean()))
-    df['lotsizesquarefeet'] = df['lotsizesquarefeet'].fillna((df['lotsizesquarefeet'].mean()))
-    df['regionidcity'] = df['regionidcity'].fillna((df['regionidcity'].mean()))
-    df['regionidzip'] = df['regionidzip'].fillna((df['regionidzip'].mean()))
-    df['unitcnt'] = df['unitcnt'].fillna((df['unitcnt'].mean()))
-    df['yearbuilt'] = df['yearbuilt'].fillna((df['yearbuilt'].mean()))
-    df['calculatedfinishedsquarefeet'] = df.calculatedfinishedsquarefeet[(np.abs(stats.zscore(df.calculatedfinishedsquarefeet)) < 3)]
-    df = df.dropna()
+def missing_rows(df):
+    num_rows_missing = df.isnull().sum()
+    pct_rows_missing = df.isnull().sum() / (df.isnull().sum() + df.notnull().sum())
+    missing_rows = pd.DataFrame({'num_rows_missing':num_rows_missing,'pct_rows_missing':pct_rows_missing})
+    return missing_rows
+
+
+
+def missing_cols(df):
+    num_cols_missing = df.isnull().sum(axis=1)
+    pct_cols_missing = df.isnull().sum(axis=1) / (df.isnull().sum(axis=1) + df.notnull().sum(axis=1))
+    num_rows = df.isnull().sum(axis=1).value_counts().sort_index().reset_index(drop=True)
+    cols_missing = pd.DataFrame({'num_cols_missing':num_cols_missing, 'pct_cols_missing':pct_cols_missing, 'num_rows': num_rows})
+    return cols_missing
+
+
+
+def drop_nulls(df, prop_required_column = .70, prop_required_row = .70):
+    threshold = int(round(prop_required_column*len(df.index),0))
+    df.dropna(axis=1, thresh=threshold, inplace=True)
+    threshold = int(round(prop_required_row*len(df.columns),0))
+    df.dropna(axis=0, thresh=threshold, inplace=True)
     return df
 
-
-# In[3]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
+def prep_zillow_data():
+    df = acquire.get_zillow_data()
+    df = missing_rows(df)
+    df = missing_cols(df)
+    df = drop_nulls(df, prop_required_column = .70, prop_required_row = .70)
+    return df
+    

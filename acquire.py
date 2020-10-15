@@ -47,3 +47,9 @@ def missing_data(df):
     nulls = pd.DataFrame({'num_rows_missing':num_rows_missing,'pct_rows_missing':pct_rows_missing})
     return nulls
 
+############################################Get Mall Data#################################
+
+def get_mallcustomer_data():
+    df = pd.read_sql('SELECT * FROM customers;', get_connection('mall_customers'))
+    return df.set_index('customer_id')
+
